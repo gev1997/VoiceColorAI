@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Voice Color AI</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+    }
+    header {
+      background: #4a90e2;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      width: 100%;
+      font-size: 22px;
+      font-weight: bold;
+    }
+    #chat-box {
+      flex: 1;
+      width: 100%;
+      max-width: 600px;
+      background: white;
+      border: 1px solid #ddd;
+      margin: 20px;
+      padding: 10px;
+      overflow-y: auto;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+    }
+    .msg {
+      margin: 8px 0;
+      padding: 10px 14px;
+      border-radius: 14px;
+      max-width: 75%;
+      word-wrap: break-word;
+    }
+    .user {
+      align-self: flex-end;
+      background: #4a90e2;
+      color: white;
+    }
+    .ai {
+      align-self: flex-start;
+      background: #e5e7eb;
+      color: black;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .color-box {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      flex-shrink: 0;
+    }
+    #controls {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    input {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      padding: 12px 18px;
+      background: #4a90e2;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <header>🎨 Voice Color AI</header>
+
+  <div id="chat-box">
+    <div class="msg ai">Hello! I am Voice Color AI. Type a color hex (like #ff0000) or name (like red) and I will show you its name and color!</div>
+  </div>
+
+  <div id="controls">
+    <input id="msg" type="text" placeholder="Type a color..." />
+    <button id="sendBtn">Send</button>
+  </div>
+
+  <script>
+    const chatBox = document.getElementById("chat-box");
+    const input = document.getElementById("msg");
+    const sendBtn = document.getElementById("sendBtn");
+
+    function addMessage(text, who, colorHex=null) {
+      const div = document.createElement("div");
+      div.className = "msg " + who;
+
+      if (who === "ai" && colorHex) {
+        const colorBox = document.createElement("div");
+        colorBox.className = "color-box";
+        colorBox.style.backgroundColor = colorHex;
+        const textSpan = document.createElement("span");
+        textSpan.textContent = text;
+        div.appendChild(colorBox);
+        div.appendChild(textSpan);
+      } else {
+        div.textContent = text;
+      }
+
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+      addMessage(text, "user");
+      input.value = "";
+      sendBtn.disabled = true;
+
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/color", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ color: text })
+        });
+        const data = await res.json();
+        addMessage(`Color Name: ${data.name} (hex: ${data.hex})`, "ai", data.hex);
+      } catch (err) {
+        addMessage("⚠️ Error: " + err.message, "ai");
+      } finally {
+        sendBtn.disabled = false;
+        input.focus();
+      }
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+</body>
+</html>
